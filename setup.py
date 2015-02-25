@@ -15,4 +15,5 @@ setup(name="quickedit",
       long_description=read('quickedit.longdesc'),
       data_files=[('share/applications',['quickedit.desktop']),
                   ('share/icons/hicolor/64x64/apps', ['quickedit.png']),
-                  ('/opt/quickedit/qml', glob.glob('qml/*.qml')), ],)
+                  ('/opt/quickedit/qml', glob.glob('qml/*.qml')),
+                  ('', ['LICENSE']), ], )

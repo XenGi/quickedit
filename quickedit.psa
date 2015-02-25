@@ -6,6 +6,6 @@ section = system
 pyversion = 2.6
 project = quickedit
 template = harmattan
-email = quickedit@xengi.de
+email = email@ricardo.band
 desc = Change your Quick-launch icons easily.
 

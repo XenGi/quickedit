@@ -1,7 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-#
-# me@xengi.de   2012-04-25
 
 """
 You can use QuickEdit to change the Quick-launch icons on the bottom when
@@ -10,14 +8,16 @@ the Quick-launch icon you want to change and then on the new app. That's all!
 Further information: http://xengi.de/quickedit 
 """
 
-__usage__ = "usage: %prog [--help]"
-__version__ = "toggle [xengi.de 2012-04-25]"
+import sys
+import os
+import errno
+import fileinput
 
-import sys,os,errno,fileinput
 from PySide import QtCore
 from PySide import QtGui
 from PySide import QtDeclarative
 from PySide import QtOpenGL
+
 
 class AppWrapper(QtCore.QObject):
     def __init__(self, app):
@@ -39,11 +39,12 @@ class AppWrapper(QtCore.QObject):
     icon = QtCore.Property(unicode, _icon, notify=changed)
     isQL = QtCore.Property(unicode, _isQL, notify=changed)
 
+
 class AppListModel(QtCore.QAbstractListModel):
-    COLUMNS = ('app',)
+    COLUMNS = ('app', )
  
     def __init__(self, apps):
-        QtCore.QAbstractListModel.__init__(self)
+        super(QtCore.QAbstractListModel, self).__init__()
         self._apps = apps
         self.setRoleNames(dict(enumerate(AppListModel.COLUMNS)))
  
@@ -54,6 +55,7 @@ class AppListModel(QtCore.QAbstractListModel):
         if index.isValid() and role == AppListModel.COLUMNS.index('app'):
             return self._apps[index.row()]
         return None
+
 
 class Controller(QtCore.QObject):
     @QtCore.Slot(QtCore.QObject)
@@ -66,22 +68,23 @@ class Controller(QtCore.QObject):
                 rc = view.rootContext()
                 rc.setContextProperty('quickListModel', AppListModel(updateQuickLaunch()))
             qlSelected = wrapper._app.desktopfile[51:52]
-            print "quicklaunch pressed", wrapper._app.desktopfile[51:52]
+            # print "quicklaunch pressed", wrapper._app.desktopfile[51:52]
         else:
-            print "app pressed", wrapper._app.name
+            # print "app pressed", wrapper._app.name
             if qlSelected > -1:
                 try:
                     os.symlink(wrapper._app.desktopfile, "/home/user/.local/share/applications/quicklaunchbar" + qlSelected + ".desktop")
-                    print "quick-launch", qlSelected, "updated"
+                    # print "quick-launch", qlSelected, "updated"
                 except OSError, e:
                     if e.errno == errno.EEXIST:
                         os.remove("/home/user/.local/share/applications/quicklaunchbar" + qlSelected + ".desktop")
                         os.symlink(wrapper._app.desktopfile, "/home/user/.local/share/applications/quicklaunchbar" + qlSelected + ".desktop")
-                        print "quick-launch", qlSelected, "force updated"
+                        # print "quick-launch", qlSelected, "force updated"
                 qlSelected = -1
                 # update quick launch
                 rc = view.rootContext()
                 rc.setContextProperty('quickListModel', AppListModel(updateQuickLaunch()))
+
 
 class App(object):
     def __init__(self, name, icon, isQL, desktopfile):
@@ -92,6 +95,7 @@ class App(object):
 
     def __str__(self):
         return self.name
+
 
 def repairQuickLaunch(quickdirlist):
     global rebootNeeded
@@ -106,7 +110,7 @@ def repairQuickLaunch(quickdirlist):
                 if e.errno == errno.EEXIST:
                     os.remove(filename)
                     os.symlink("/usr/share/applications/browser.desktop", filename)
-            print "Broken quick-launch symlink fixed!"
+            # print "Broken quick-launch symlink fixed!"
 
     # check if an app of the quicklaunch was uninstalled and fix it
     reboot = False
@@ -119,6 +123,7 @@ def repairQuickLaunch(quickdirlist):
     if reboot:
         print "You need to reboot to repair your quick-launch."
         rebootNeeded = 1
+
 
 def updateQuickLaunch():
     quicklist = []
@@ -136,7 +141,7 @@ def updateQuickLaunch():
         appicon = ""
         for line in lines:
             line = line.rstrip()
-            if ( line.startswith("Name=") ) and ( appname == "" ):
+            if line.startswith("Name=") and appname == "":
                 appname = line[5:]
             if line.startswith("Icon="):
                 if "/" in line:
@@ -147,10 +152,11 @@ def updateQuickLaunch():
                         appicon = "/usr/share/themes/base/meegotouch/icons/" + line[5:] + ".svg"
                         if not os.path.isfile(appicon):
                             appicon = "/usr/share/icons/hicolor/64x64/apps/" + line[5:] + ".png"
-        if ( appname != "" ) and ( appicon != "" ):
+        if appname != "" and appicon != "":
             quicklist.append(App(appname, appicon, "1", filename))
 
     return [AppWrapper(app) for app in quicklist]
+
 
 if __name__ == "__main__":
     qapp = QtGui.QApplication(sys.argv)
@@ -163,15 +169,15 @@ if __name__ == "__main__":
     path = "/usr/share/applications/"
     dirList = os.listdir(path)
     for filename in dirList:
-        if ( filename.endswith(".desktop") ) and ( not os.path.islink(path + filename) ):
-            f = file(path + filename)
+        if filename.endswith(".desktop") and not os.path.islink(os.path.join(path, filename)):
+            f = file(os.path.join(path, filename))
             lines = f.readlines()
             appname = ""
             appicon = ""
             show = True
             for line in lines:
                 line = line.rstrip()
-                if ( line.startswith("Name=") ) and ( appname == "" ):
+                if line.startswith("Name=") and appname == "":
                     appname = line[5:]
                 if line.startswith("Icon="):
                     if "/" in line:
@@ -184,21 +190,21 @@ if __name__ == "__main__":
                                 appicon = "/usr/share/icons/hicolor/64x64/apps/" + line[5:] + ".png"
                 if line.startswith("NotShowIn=X-MeeGo"):
                     show = False
-            if ( appname != "" ) and ( appicon != "" ) and show:
+            if appname != "" and appicon != "" and show:
                 applist.append(App(appname, appicon, "0", path + filename))
 
     path = "/var/lib/apt-desktop/entries/"
     dirList = os.listdir(path)
     for filename in dirList:
-        if not os.path.islink(path + filename):
-            f = file(path + filename)
+        if not os.path.islink(os.path.join(path, filename)):
+            f = file(os.path.join(path, filename))
             lines = f.readlines()
             appname = ""
             appicon = ""
             show = True
             for line in lines:
                 line = line.rstrip()
-                if ( line.startswith("Name=") ) and ( appname == "" ):
+                if line.startswith("Name=") and appname == "":
                     appname = line[5:]
                 if line.startswith("Icon="):
                     if "/" in line:
@@ -211,7 +217,7 @@ if __name__ == "__main__":
                                 appicon = "/usr/share/icons/hicolor/64x64/apps/" + line[5:] + ".png"
                 if line.startswith("NotShowIn=X-MeeGo"):
                     show = False
-            if ( appname != "" ) and ( appicon != "" ) and show:
+            if appname != "" and appicon != "" and show:
                 applist.append(App(appname, appicon, "0", path + filename))
 
     apps = [AppWrapper(app) for app in applist]

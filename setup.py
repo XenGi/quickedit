@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from distutils.core import setup
 import os, sys, glob
 
@@ -8,7 +10,7 @@ setup(name="quickedit",
       scripts=['quickedit'],
       version='0.99.9',
       maintainer="Ricardo Band",
-      maintainer_email="quickedit@xengi.de",
+      maintainer_email="email@ricardo.band",
       description="Change your Quick-launch icons easily.",
       long_description=read('quickedit.longdesc'),
       data_files=[('share/applications',['quickedit.desktop']),
